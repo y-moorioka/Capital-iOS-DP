@@ -8,6 +8,7 @@ protocol ConfirmationPresenterProtocol: WalletFormPresenterProtocol {}
 
 protocol ConfirmationCoordinatorProtocol: class {
     func showResult(payload: TransferPayload)
+    func dismiss()
 }
 
 

@@ -21,6 +21,7 @@ final class ConfirmationPresenter {
     let feeDisplaySettings: FeeDisplaySettingsProtocol
 
     var logger: WalletLoggerProtocol?
+    var notifyAuth: Bool
 
     init(view: WalletFormViewProtocol,
          coordinator: ConfirmationCoordinatorProtocol,
@@ -38,14 +39,47 @@ final class ConfirmationPresenter {
         self.accessoryViewModelFactory = accessoryViewModelFactory
         self.eventCenter = eventCenter
         self.feeDisplaySettings = feeDisplaySettings
+        self.notifyAuth = false
     }
 
     private func handleTransfer(result: Result<Void, Error>) {
         switch result {
         case .success:
             eventCenter.notify(with: TransferCompleteEvent(payload: payload))
-            
-            coordinator.showResult(payload: payload)
+            if #available(iOS 10.0, *) {
+                let semaphore = DispatchSemaphore(value: 0)
+                UNUserNotificationCenter.current().getNotificationSettings { settings in
+                    if settings.authorizationStatus == .authorized {
+                        self.notifyAuth = true
+                    } else {
+                        self.notifyAuth = false
+                    }
+                    semaphore.signal()
+                }
+                semaphore.wait()
+                
+                if self.notifyAuth && UserDefaults.standard.object(forKey: TransferLabel.wait) != nil {
+                    view?.didStartLoading()
+                    let queue = DispatchQueue(label: TransferLabel.queue)
+                    UserDefaults.standard.setValue(1, forKey: TransferLabel.wait)
+                    queue.async { [weak self] in
+                        for i in 1...10 {
+                            Thread.sleep(forTimeInterval: 1.0)
+                            if UserDefaults.standard.integer(forKey: TransferLabel.wait) == 0 || i == 5 {
+                                DispatchQueue.main.async {
+                                    self?.view?.didStopLoading()
+                                    self?.coordinator.dismiss()
+                                }
+                                break
+                            }
+                        }
+                    }
+                } else {
+                    coordinator.showResult(payload: self.payload)
+                }
+            } else {
+                coordinator.showResult(payload: payload)
+            }
         case .failure:
             view?.showError(message: L10n.Transaction.Error.fail)
         }

@@ -67,7 +67,7 @@ extension LoadableViewProtocol where Self: UIViewController {
     }
 
     func didStartLoading() {
-        let activityIndicator = loadableContentView.subviews.first {
+        let activityIndicator = self.navigationController?.view.subviews.first {
             $0.accessibilityIdentifier == WalletLoadableViewProtocolConstants.activityIndicatorIdentifier
         }
 
@@ -77,11 +77,11 @@ extension LoadableViewProtocol where Self: UIViewController {
 
         let newIndicator = loadingViewFactory.createLoadingView()
         newIndicator.accessibilityIdentifier = WalletLoadableViewProtocolConstants.activityIndicatorIdentifier
-        newIndicator.frame = loadableContentView.bounds
+        newIndicator.frame = CGRect(origin: .zero, size: self.navigationController!.view.bounds.size)
         newIndicator.autoresizingMask = UIView.AutoresizingMask.flexibleWidth.union(.flexibleHeight)
         newIndicator.alpha = 0.0
-        loadableContentView.addSubview(newIndicator)
-
+        self.navigationController?.view.addSubview(newIndicator)
+        
         loadableContentView.isUserInteractionEnabled = shouldDisableInteractionWhenLoading
 
         newIndicator.startAnimating()
@@ -92,7 +92,7 @@ extension LoadableViewProtocol where Self: UIViewController {
     }
 
     func didStopLoading() {
-        let activityIndicator = loadableContentView.subviews.first {
+        let activityIndicator = self.navigationController?.view.subviews.first {
             $0.accessibilityIdentifier == WalletLoadableViewProtocolConstants.activityIndicatorIdentifier
         }
 

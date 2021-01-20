@@ -20,4 +20,8 @@ final class ConfirmationCoordinator: ConfirmationCoordinatorProtocol {
 
         resolver.navigation?.set(view.controller, animated: true)
     }
+    
+    func dismiss() {
+        resolver.navigation?.dismiss()
+    }
 }
