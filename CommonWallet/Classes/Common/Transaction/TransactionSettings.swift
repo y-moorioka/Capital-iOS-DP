@@ -26,6 +26,7 @@ public struct WalletTransactionSettings {
 
 public protocol WalletTransactionSettingsFactoryProtocol {
     func createSettings(for asset: WalletAsset, senderId: String?, receiverId: String?) -> WalletTransactionSettings
+    func createSettings(for asset: WalletAsset, senderId: String?, receiverId: String?, minimum: Decimal) -> WalletTransactionSettings
 }
 
 public extension WalletTransactionSettingsFactoryProtocol {
@@ -34,6 +35,11 @@ public extension WalletTransactionSettingsFactoryProtocol {
 
         return WalletTransactionSettings(transferLimit: WalletTransactionLimit(maximum: limit),
                                          withdrawLimit: WalletTransactionLimit(maximum: limit))
+    }
+    
+    func createSettings(for asset: WalletAsset, senderId: String?, receiverId: String?, minimum: Decimal) -> WalletTransactionSettings {
+        let limit = WalletTransactionLimit(minimum: minimum, maximum: WalletTransactionLimitConstants.defaultMaxLimit)
+        return WalletTransactionSettings(transferLimit: limit, withdrawLimit: limit)
     }
 }
 

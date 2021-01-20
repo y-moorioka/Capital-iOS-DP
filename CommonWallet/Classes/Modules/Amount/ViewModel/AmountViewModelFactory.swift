@@ -22,11 +22,18 @@ protocol AmountViewModelFactoryProtocol {
 
     func createDescriptionViewModel(for details: String?) throws -> DescriptionInputViewModel
     func minimumLimit(for asset: WalletAsset, sender: IRAccountId?, receiver: IRAccountId?) -> Decimal
+    func minimumLimit(for asset: WalletAsset, sender: IRAccountId?, receiver: IRAccountId?, amount: Decimal?) -> Decimal
 
     func createMinimumLimitErrorDetails(for asset: WalletAsset,
                                         sender: IRAccountId?,
                                         receiver: IRAccountId?,
                                         locale: Locale) -> String
+    
+    func createMinimumLimitErrorDetails(for asset: WalletAsset,
+                                        sender: IRAccountId?,
+                                        receiver: IRAccountId?,
+                                        locale: Locale,
+                                        amount: Decimal?) -> String
 }
 
 enum AmountViewModelFactoryError: Error {
@@ -105,6 +112,18 @@ extension AmountViewModelFactory: AmountViewModelFactoryProtocol {
             .createSettings(for: asset, senderId: sender?.identifier(), receiverId: receiver?.identifier())
             .transferLimit.minimum
     }
+    
+    func minimumLimit(for asset: WalletAsset, sender: IRAccountId?, receiver: IRAccountId?, amount: Decimal?) -> Decimal {
+        if let minimum = amount {
+            return transactionSettingsFactory
+                .createSettings(for: asset, senderId: sender?.identifier(), receiverId: receiver?.identifier(), minimum: minimum)
+                .transferLimit.minimum
+        } else {
+            return transactionSettingsFactory
+                .createSettings(for: asset, senderId: sender?.identifier(), receiverId: receiver?.identifier())
+                .transferLimit.minimum
+        }
+    }
 
     func createMinimumLimitErrorDetails(for asset: WalletAsset,
                                         sender: IRAccountId?,
@@ -124,7 +143,27 @@ extension AmountViewModelFactory: AmountViewModelFactoryProtocol {
 
         return L10n.Amount.Error.operationMinLimit("\(asset.symbol)\(amountString)")
     }
+    
+    func createMinimumLimitErrorDetails(for asset: WalletAsset,
+                                        sender: IRAccountId?,
+                                        receiver: IRAccountId?,
+                                        locale: Locale,
+                                        amount: Decimal?) -> String {
+        let amount = minimumLimit(for: asset, sender: sender, receiver: receiver, amount: amount)
 
+        let amountFormatter = amountFormatterFactory.createDisplayFormatter(for: asset)
+
+        let amountString: String
+
+        if let formattedAmount = amountFormatter.value(for: locale).string(from: amount as NSNumber) {
+            amountString = formattedAmount
+        } else {
+            amountString = (amount as NSNumber).stringValue
+        }
+
+        return L10n.Amount.Error.operationMinLimit("\(asset.symbol)\(amountString)")
+    }
+    
     func createDescriptionViewModel(for details: String?) throws -> DescriptionInputViewModel {
         guard let validator = descriptionValidatorFactory.createTransferDescriptionValidator() else {
                 throw AmountViewModelFactoryError.missingValidator
